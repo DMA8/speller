@@ -11,93 +11,87 @@ import (
 	"strings"
 )
 
+//SpellStorage 
 type SpellStorage struct {
 	Storage map[string][]string
 }
 
+//Spelling: SpellName - correct word; MisSpells - incorrect variants of SpellName
+type Spelling struct {
+	SpellName	string `json:"spellName"`
+	MisSpells	[]string `json:"misSpells"`
+}
 
-
+//NewStorage creates new storage
 func NewStorage(fileName string) *SpellStorage {
 	var storage SpellStorage
 	var err error
-	storage.Storage, err = CsvReader(fileName)
+	storage.Storage, err = CSVReader(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
 	return &storage
 }
 
-func (s *SpellStorage) CreateSpell(csvLine string) error {
-	words := strings.Split(csvLine, ";")
-	key := words[0]
-	if _, ok := s.Storage[key]; ok {
-		return errors.New(csvLine + "is already created")
+//CreateSpell creates pair spellWord - misSpells in storage's map
+func (s *SpellStorage) CreateSpell(spelling *Spelling) error {
+	if _, ok := s.Storage[spelling.SpellName]; ok {
+		return errors.New(spelling.SpellName + "is already created")
 	}
-	if len(words) < 2 {
-		return errors.New(csvLine + "provide incorrect words")
-	}
-	errorWords := strings.Split(words[1], "|")
-	s.Storage[key] = append(s.Storage[key], errorWords...)
+	s.Storage[spelling.SpellName] = append(s.Storage[spelling.SpellName], spelling.MisSpells...)
 	return nil
 }
 
-func (s *SpellStorage) ReadSPell(csvLine string) ([]string, error) {
-	words := strings.Split(csvLine, ";")
-	key := words[0]
-	if _, ok := s.Storage[key]; !ok {
-		return nil, fmt.Errorf("\"%s\" %s", csvLine," is not created")
+//ReadSpell return misSpells for given key
+func (s *SpellStorage) ReadSpell(spelling string) (*Spelling, error) {
+	if _, ok := s.Storage[spelling]; !ok {
+		return nil, fmt.Errorf("`%s` %s", spelling," is not created")
 	}
-	return s.Storage[key], nil
+	return &Spelling{spelling, s.Storage[spelling]}, nil
 }
 
-func (s *SpellStorage) AddSpell(csvLine string) error {
-	words := strings.Split(csvLine, ";")
-	key := words[0]
-	if _, ok := s.Storage[key]; !ok {
-		return errors.New(csvLine + "is not added")
+//AddSpell adds given pair spellName - misSpells
+func (s *SpellStorage) AddSpell(spelling *Spelling) error {
+	if _, ok := s.Storage[spelling.SpellName]; !ok {
+		return errors.New(spelling.SpellName + " is not added")
 	}
-	if len(words) < 2 {
-		return errors.New(csvLine + "provide incorrect words")
+	if len(spelling.MisSpells) < 1 {
+		return errors.New(spelling.SpellName + " provide incorrect words")
 	}
-	errorWords := strings.Split(words[1], "|")
-	s.Storage[key] = append(s.Storage[key], errorWords...)
+	s.Storage[spelling.SpellName] = append(s.Storage[spelling.SpellName], spelling.MisSpells...)
 	return nil
 }
 
-func (s *SpellStorage) DeleteSpell(csvLine string) error {
-	words := strings.Split(csvLine, ";")
-	key := words[0]
-	if _, ok := s.Storage[key]; !ok {
-		return errors.New(csvLine + "is not added")
+//DeleteSpell deletes given key from storage's map
+func (s *SpellStorage) DeleteSpell(spelling string) error {
+	if _, ok := s.Storage[spelling]; !ok {
+		return errors.New(spelling + " is not added")
 	}
-	delete(s.Storage, key)
+	delete(s.Storage, spelling)
 	return nil
 }
 
-func (s *SpellStorage) DeleteParticularSpellings(csvLine string) error {
-	words := strings.Split(csvLine, ";")
-	key := words[0]
-	if _, ok := s.Storage[key]; !ok {
-		return errors.New(key + "is not added")
+//DeleteParticularSpellings deletes 
+func (s *SpellStorage) DeleteParticularSpellings(spelling *Spelling) error {
+	if _, ok := s.Storage[spelling.SpellName]; !ok {
+		return errors.New(spelling.SpellName + " is not added")
 	}
-	if len(words) < 2 || words[1] == "" {
-		return errors.New(csvLine + "provide spellings to delete")
+	if len(spelling.MisSpells) < 1 {
+		return errors.New(spelling.SpellName + " provide spellings to delete")
 	}
-	fmt.Println(words)
-	wordsToDelete := strings.Split(words[1], "|")
-	for _, v := range wordsToDelete {
-		for i := 0; i < len(s.Storage[key]); i++ {
-			if v == s.Storage[key][i] {
-				s.Storage[key][i] = s.Storage[key][len(s.Storage[key])-1]
-				s.Storage[key] = s.Storage[key][:len(s.Storage[key])-1]
+	for _, v := range spelling.MisSpells {
+		for i := 0; i < len(s.Storage[spelling.SpellName]); i++ {
+			if v == s.Storage[spelling.SpellName][i] {
+				s.Storage[spelling.SpellName][i] = s.Storage[spelling.SpellName][len(s.Storage[spelling.SpellName])-1]
+				s.Storage[spelling.SpellName] = s.Storage[spelling.SpellName][:len(s.Storage[spelling.SpellName])-1]
 			}
 		}
 	}
-	fmt.Println(s.Storage[key])
 	return nil
 }
 
-func CsvReader(fileName string) (map[string][]string, error) {
+//CSVReader creates map[firstColumnCSV] and splitted by "|" second column
+func CSVReader(fileName string) (map[string][]string, error) {
 	outputMap := make(map[string][]string)
 	csvFile, err := os.Open(fileName)
 	if err != nil {

@@ -3,6 +3,7 @@ package handlerFastHTTP
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"speller/internal/storage"
 	"strings"
 
@@ -10,108 +11,117 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+
+
+//Handler: Connects storage and HTTP handlers
+type Handler struct {
+	st *storage.SpellStorage
+}
+
+//ConfigureRouter 
+func ConfiguredRouter(spellStorage *storage.SpellStorage) *router.Router {
+	r := router.New()
+	h := Handler{spellStorage}
+
+	r.GET("/read", h.Read)
+	r.POST("/add", h.Add)
+	r.POST("/create", h.Create)
+	r.DELETE("/fullDelete", h.FullDelete)
+	r.DELETE("/delete", h.Delete)
+	return r
+}
+
+//Just for fun
 func Index(ctx *fasthttp.RequestCtx) {
 	fmt.Fprintf(ctx, "Hi!")
 }
 
-type AddStruct struct {
-	SpellName	string `json:"spellName"`
-	MisSpells	[]string `json:"misSpells"`
-
-}
-
-func SpellInfo(ctx *fasthttp.RequestCtx) {
-
-}
-
-type Hand struct {
-	st *storage.SpellStorage
-}
-
-func (h *Hand) Read(ctx *fasthttp.RequestCtx) {
+//Read: returns all misspels for required word; If there is no such word - returns error
+func (h *Handler) Read(ctx *fasthttp.RequestCtx) {
+	log.Println("Read query")
 	name := ctx.QueryArgs().Peek("name")
-	content, err := h.st.ReadSPell(string(name))
+	content, err := h.st.ReadSpell(string(name))
 	if err != nil {
-		ctx.Error(err.Error(), 404)
+		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
+		//ctx.Write(makeJSONErrorResponse(err.Error()))
 	} else {
-		fmt.Fprint(ctx, strings.Join(content, " "))
+		ctx.Write(makeJSONResultResponse(*content))
 	}
 }
 
-func convertToCSV(a AddStruct) string{
+//convertToCSV converts AddStruct to CSV string like "SpellName;wrong1|wrong2|wrong3;"
+func convertToCSV(a storage.Spelling) string{
 	wrongWords := strings.Join(a.MisSpells, "|")
 	return fmt.Sprintf("%s;%s;", a.SpellName, wrongWords)
 }
 
-func (h *Hand) Add(ctx *fasthttp.RequestCtx) {
-	var misSpells AddStruct
+//Add handler adds accepts json like "{"spellName":"word", "misSpells": ["wordd", "worrd"]}"
+// and if "spellName" is in storage, adds misSpells to regarding spellName in storage
+func (h *Handler) Add(ctx *fasthttp.RequestCtx) {
+	var misSpells storage.Spelling
+	log.Println("Add query")
 	err := json.Unmarshal(ctx.Request.Body(), &misSpells)
 	if err != nil {
-		ctx.Error(err.Error(), 404)
+		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 	}
-	fmt.Println(misSpells)
-	err = h.st.AddSpell(convertToCSV(misSpells))
+	err = h.st.AddSpell(&misSpells)
 	if err != nil {
-		ctx.Error(err.Error(), 500)
+		ctx.Error(string(makeJSONErrorResponse(err.Error())), 500)
 	} else {
-		fmt.Fprintf(ctx, "%s added", misSpells.SpellName)
+		ctx.Write(makeJSONAddmit(fmt.Sprintf("added to %s", misSpells.SpellName)))
 	}
 }
 
-func (h *Hand) Create(ctx *fasthttp.RequestCtx) {
-	//fmt.Println(string(ctx.Request.Body()))
-	var misSpells AddStruct
+//Create handler creates new pair of spellName and misSpells and adds it in storage
+//if spellName was already in storage - returns error
+func (h *Handler) Create(ctx *fasthttp.RequestCtx) {
+	var misSpells storage.Spelling
+	log.Println("Create query")
 	err := json.Unmarshal(ctx.Request.Body(), &misSpells)
 	if err != nil {
-		ctx.Error(err.Error(), 404)
+		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 	}
-	fmt.Println(misSpells)
-	err = h.st.CreateSpell(convertToCSV(misSpells))
+	err = h.st.CreateSpell(&misSpells)
 	if err != nil {
-		ctx.Error(err.Error(), 500)
+		ctx.Error(string(makeJSONErrorResponse(err.Error())), 500)
 	} else {
-		fmt.Fprintf(ctx, "%s added", misSpells.SpellName)
+		ctx.Write(makeJSONAddmit(fmt.Sprintf("%s created", misSpells.SpellName)))
 	}
 }
 
-func (h *Hand) FullDelete(ctx *fasthttp.RequestCtx) {
+//FullDelete deletes everything about given spellName
+//spellName expected as a parameter in URI (hostname:port/fullDelete?name=spellName)
+func (h *Handler) FullDelete(ctx *fasthttp.RequestCtx) {
+	log.Println("FullDelete query")
 	name := ctx.QueryArgs().Peek("name")
 	err := h.st.DeleteSpell(string(name))
 	if err != nil {
-		fmt.Fprint(ctx, err)
+		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 	} else {
-		fmt.Fprint(ctx, "ok")
+		ctx.Write(makeJSONAddmit(fmt.Sprintf("%s deleted", name)))
 	}
 }
 
-func (h *Hand) Delete(ctx *fasthttp.RequestCtx) {
-	var misSpells AddStruct
+//Delete handler deletes given misSpellings for given spellName
+// expects json like  "{"spellName":"word", "misSpells": ["wordd", "worrd"]}" 
+//and removes "wordd" and "worrd" from storage for spellName
+func (h *Handler) Delete(ctx *fasthttp.RequestCtx) {
+	var misSpells storage.Spelling
+	log.Println("Delete query")
 	err := json.Unmarshal(ctx.Request.Body(), &misSpells)
 	if err != nil {
-		ctx.Error(err.Error(), 404)
+		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 	} else {
-		err = h.st.DeleteParticularSpellings(convertToCSV(misSpells))
+		err = h.st.DeleteParticularSpellings(&misSpells)
 	}
 	if err == nil {
-		ans, err2 := h.st.ReadSPell(convertToCSV(misSpells))
+		ans, err2 := h.st.ReadSpell(misSpells.SpellName)
 		if err2 != nil {
-			fmt.Fprintf(ctx, "%s",err2)
+			ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 		} else {
-			fmt.Fprint(ctx, ans)
+			ctx.Write(makeJSONResultResponse(*ans))
 		}
 	} else {
-		fmt.Fprint(ctx, err)
+		ctx.Error(string(makeJSONErrorResponse(err.Error())), 500)
 	}
-}
-
-func ConfiguredRouter(a *storage.SpellStorage) *router.Router {
-	r := router.New()
-	ab := Hand{a}
-	//Ro := abc{r, a}
-	r.GET("/read", ab.Read)
-	r.POST("/add", ab.Add)
-	r.POST("/create", ab.Create)
-	r.DELETE("/fullDelete", ab.FullDelete)
-	r.DELETE("/delete", ab.Delete)
-	return r
 }
