@@ -5,17 +5,21 @@ import (
 	"fmt"
 	"log"
 	"speller/internal/storage"
-	"strings"
 
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
 )
 
+type IStorage interface {
+	CreateSpell(*storage.Spelling) error
+	ReadSpell(string)(*storage.Spelling, error)
+	AddSpell(*storage.Spelling) error
+	DeleteSpell(string) error
+	DeleteParticularSpellings(*storage.Spelling) error
+}
 
-
-//Handler: Connects storage and HTTP handlers
 type Handler struct {
-	st *storage.SpellStorage
+	st IStorage
 }
 
 //ConfigureRouter 
@@ -47,12 +51,6 @@ func (h *Handler) Read(ctx *fasthttp.RequestCtx) {
 	} else {
 		ctx.Write(makeJSONResultResponse(*content))
 	}
-}
-
-//convertToCSV converts AddStruct to CSV string like "SpellName;wrong1|wrong2|wrong3;"
-func convertToCSV(a storage.Spelling) string{
-	wrongWords := strings.Join(a.MisSpells, "|")
-	return fmt.Sprintf("%s;%s;", a.SpellName, wrongWords)
 }
 
 //Add handler adds accepts json like "{"spellName":"word", "misSpells": ["wordd", "worrd"]}"
