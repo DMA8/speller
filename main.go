@@ -3,9 +3,9 @@ package main
 import (
 	"log"
 
-	"speller/internal/handlerFastHTTP"
-	"speller/internal/natsClient"
-	"speller/internal/storage"
+	"spellCheck/internal/handlerFastHTTP"
+	"spellCheck/internal/natsClient"
+	"spellCheck/internal/storage"
 
 	"github.com/valyala/fasthttp"
 )

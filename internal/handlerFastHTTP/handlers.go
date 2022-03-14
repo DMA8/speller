@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"speller/internal/storage"
+	"spellCheck/internal/storage"
 	"sync"
 
 	"github.com/fasthttp/router"

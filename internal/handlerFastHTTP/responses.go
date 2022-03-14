@@ -3,7 +3,7 @@ package handlerFastHTTP
 import (
 	"encoding/json"
 	"log"
-	"speller/internal/storage"
+	"spellCheck/internal/storage"
 )
 
 type badResponse struct {
