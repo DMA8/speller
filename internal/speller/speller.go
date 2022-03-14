@@ -25,6 +25,7 @@ func AcceptMessage(ctx context.Context, conveyIn <-chan natsClient.BadMessage, c
 	for {
 		select {
 		case inpQuery := <- conveyIn:
+			log.Println("Speller got a message from stan client!")
 			suggest.MisSpells = []string{inpQuery.Query}
 			suggest.SpellName = s.SpellCorrect(inpQuery.Query)
 			conveyOut <- suggest

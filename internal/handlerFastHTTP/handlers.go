@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"spellCheck/internal/storage"
-	"sync"
 
 	"github.com/fasthttp/router"
 	"github.com/valyala/fasthttp"
@@ -13,7 +12,7 @@ import (
 
 type IStorage interface {
 	CreateSpell(*storage.Spelling) error
-	ReadSpell(string)(*storage.Spelling, error)
+	ReadSpell(string) (*storage.Spelling, error)
 	AddSpell(*storage.Spelling) error
 	DeleteSpell(string) error
 	DeleteParticularSpellings(*storage.Spelling) error
@@ -21,13 +20,12 @@ type IStorage interface {
 
 type Handler struct {
 	st IStorage
-	mu sync.Mutex
 }
 
-//ConfigureRouter 
+//ConfigureRouter
 func ConfiguredRouter(spellStorage *storage.SpellStorage) *router.Router {
 	r := router.New()
-	h := Handler{spellStorage, sync.Mutex{}}
+	h := Handler{spellStorage}
 
 	r.GET("/read", h.Read)
 	r.POST("/add", h.Add)
@@ -46,9 +44,7 @@ func Index(ctx *fasthttp.RequestCtx) {
 func (h *Handler) Read(ctx *fasthttp.RequestCtx) {
 	log.Println("Read query")
 	name := ctx.QueryArgs().Peek("name")
-	h.mu.Lock()
 	content, err := h.st.ReadSpell(string(name))
-	h.mu.Unlock()
 	if err != nil {
 		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 		//ctx.Write(makeJSONErrorResponse(err.Error()))
@@ -66,9 +62,7 @@ func (h *Handler) Add(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 	}
-	h.mu.Lock()
 	err = h.st.AddSpell(&misSpells)
-	h.mu.Unlock()
 	if err != nil {
 		ctx.Error(string(makeJSONErrorResponse(err.Error())), 500)
 	} else {
@@ -85,9 +79,7 @@ func (h *Handler) Create(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 	}
-	h.mu.Lock()
 	err = h.st.CreateSpell(&misSpells)
-	h.mu.Unlock()
 	if err != nil {
 		ctx.Error(string(makeJSONErrorResponse(err.Error())), 500)
 	} else {
@@ -100,9 +92,7 @@ func (h *Handler) Create(ctx *fasthttp.RequestCtx) {
 func (h *Handler) FullDelete(ctx *fasthttp.RequestCtx) {
 	log.Println("FullDelete query")
 	name := ctx.QueryArgs().Peek("name")
-	h.mu.Lock()
 	err := h.st.DeleteSpell(string(name))
-	h.mu.Unlock()
 	if err != nil {
 		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 	} else {
@@ -111,7 +101,7 @@ func (h *Handler) FullDelete(ctx *fasthttp.RequestCtx) {
 }
 
 //Delete handler deletes given misSpellings for given spellName
-// expects json like  "{"spellName":"word", "misSpells": ["wordd", "worrd"]}" 
+// expects json like  "{"spellName":"word", "misSpells": ["wordd", "worrd"]}"
 //and removes "wordd" and "worrd" from storage for spellName
 func (h *Handler) Delete(ctx *fasthttp.RequestCtx) {
 	var misSpells storage.Spelling
@@ -120,9 +110,7 @@ func (h *Handler) Delete(ctx *fasthttp.RequestCtx) {
 	if err != nil {
 		ctx.Error(string(makeJSONErrorResponse(err.Error())), 404)
 	} else {
-		h.mu.Lock()
 		err = h.st.DeleteParticularSpellings(&misSpells)
-		h.mu.Unlock()
 	}
 	if err == nil {
 		ans, err2 := h.st.ReadSpell(misSpells.SpellName)

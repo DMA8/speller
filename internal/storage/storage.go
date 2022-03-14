@@ -10,11 +10,13 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync"
 )
 
 //SpellStorage
 type SpellStorage struct {
-	Storage map[string][]string
+	Storage	map[string][]string
+	mu		sync.Mutex
 }
 
 //Spelling: SpellName - correct word; MisSpells - incorrect variants of SpellName
@@ -28,6 +30,7 @@ func NewStorage(fileName string) *SpellStorage {
 	var storage SpellStorage
 	var err error
 	storage.Storage, err = CSVReader(fileName)
+	storage.mu = sync.Mutex{}
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -38,6 +41,7 @@ func (s *SpellStorage)AcceptSpellerSuggest(ctx context.Context, convey <- chan S
 	for {
 		select {
 		case msg := <- convey:
+			log.Println("Storage got a message from speller!")
 			s.CreateOrAdd(msg)
 		case <- ctx.Done():
 			return
@@ -46,6 +50,7 @@ func (s *SpellStorage)AcceptSpellerSuggest(ctx context.Context, convey <- chan S
 }
 
 func (s *SpellStorage)CreateOrAdd(spelling Spelling) {
+	log.Println(spelling)
 	if err := s.CreateSpell(&spelling); err != nil {
 		err = s.AddSpell(&spelling)
 		if err != nil {
@@ -56,15 +61,20 @@ func (s *SpellStorage)CreateOrAdd(spelling Spelling) {
 
 //CreateSpell creates pair spellWord - misSpells in storage's map
 func (s *SpellStorage) CreateSpell(spelling *Spelling) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.Storage[spelling.SpellName]; ok {
 		return errors.New(spelling.SpellName + "is already created")
 	}
 	s.Storage[spelling.SpellName] = append(s.Storage[spelling.SpellName], spelling.MisSpells...)
+
 	return nil
 }
 
 //ReadSpell return misSpells for given key
 func (s *SpellStorage) ReadSpell(spelling string) (*Spelling, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.Storage[spelling]; !ok {
 		return nil, fmt.Errorf("`%s` %s", spelling," is not created")
 	}
@@ -73,6 +83,8 @@ func (s *SpellStorage) ReadSpell(spelling string) (*Spelling, error) {
 
 //AddSpell adds given pair spellName - misSpells
 func (s *SpellStorage) AddSpell(spelling *Spelling) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.Storage[spelling.SpellName]; !ok {
 		return errors.New(spelling.SpellName + " is not added")
 	}
@@ -85,6 +97,8 @@ func (s *SpellStorage) AddSpell(spelling *Spelling) error {
 
 //DeleteSpell deletes given key from storage's map
 func (s *SpellStorage) DeleteSpell(spelling string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.Storage[spelling]; !ok {
 		return errors.New(spelling + " is not added")
 	}
@@ -94,6 +108,8 @@ func (s *SpellStorage) DeleteSpell(spelling string) error {
 
 //DeleteParticularSpellings deletes 
 func (s *SpellStorage) DeleteParticularSpellings(spelling *Spelling) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	if _, ok := s.Storage[spelling.SpellName]; !ok {
 		return errors.New(spelling.SpellName + " is not added")
 	}
