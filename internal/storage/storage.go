@@ -2,6 +2,7 @@ package storage
 
 import (
 	"bufio"
+	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	"strings"
 )
 
-//SpellStorage 
+//SpellStorage
 type SpellStorage struct {
 	Storage map[string][]string
 }
@@ -31,6 +32,26 @@ func NewStorage(fileName string) *SpellStorage {
 		log.Fatal(err)
 	}
 	return &storage
+}
+
+func (s *SpellStorage)AcceptSpellerSuggest(ctx context.Context, convey <- chan Spelling) {
+	for {
+		select {
+		case msg := <- convey:
+			s.CreateOrAdd(msg)
+		case <- ctx.Done():
+			return
+		}
+	}
+}
+
+func (s *SpellStorage)CreateOrAdd(spelling Spelling) {
+	if err := s.CreateSpell(&spelling); err != nil {
+		err = s.AddSpell(&spelling)
+		if err != nil {
+			log.Print(err)
+		}
+	}
 }
 
 //CreateSpell creates pair spellWord - misSpells in storage's map

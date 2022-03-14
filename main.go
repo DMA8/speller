@@ -1,27 +1,24 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 
 	"spellCheck/internal/handlerFastHTTP"
 	"spellCheck/internal/natsClient"
+	"spellCheck/internal/speller"
 	"spellCheck/internal/storage"
 
-	"github.com/Saimunyz/speller"
 	"github.com/valyala/fasthttp"
 )
 
 func main() {
-	a := storage.NewStorage("spellcheck.csv")
-	r := handlerFastHTTP.ConfiguredRouter(a)
-	s := speller.NewSpeller()
-	err := s.LoadModel("./models/small-data.gz")
-	if err != nil {
-		log.Fatal(err)
-	}
-	ans := s.SpellCorrect("акно")
-	fmt.Println(ans)
-	natsClient.Start()
+	natsToSpeller := make(chan natsClient.BadMessage, 0)
+	spellerToStorage := make(chan storage.Spelling, 0)
+	myStorage := storage.NewStorage("spellcheck.csv")
+	r := handlerFastHTTP.ConfiguredRouter(myStorage)
+	natsClient.Start(natsToSpeller)
+	go speller.AcceptMessage(context.Background(), natsToSpeller, spellerToStorage)
+	go myStorage.AcceptSpellerSuggest(context.Background(), spellerToStorage)
 	log.Fatal(fasthttp.ListenAndServe(":8080", r.Handler))
 }
