@@ -4,14 +4,7 @@ import (
 	"testing"
 )
 
-func in(word string, collection []string) bool {
-	for _, v := range collection {
-		if word == v {
-			return true
-		}
-	}
-	return false
-}
+
 
 func TestNewStorage(t *testing.T) {
 	testMap := NewStorage("spells.csv")

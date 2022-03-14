@@ -1,28 +1,23 @@
 package storage
 
 import (
-	"bufio"
 	"context"
-	"encoding/csv"
 	"errors"
 	"fmt"
-	"io"
 	"log"
-	"os"
-	"strings"
 	"sync"
 )
 
 //SpellStorage
 type SpellStorage struct {
-	Storage	map[string][]string
-	mu		sync.Mutex
+	Storage map[string][]string
+	mu      sync.Mutex
 }
 
 //Spelling: SpellName - correct word; MisSpells - incorrect variants of SpellName
 type Spelling struct {
-	SpellName	string `json:"spellName"`
-	MisSpells	[]string `json:"misSpells"`
+	SpellName string   `json:"spellName"`
+	MisSpells []string `json:"misSpells"`
 }
 
 //NewStorage creates new storage
@@ -37,21 +32,22 @@ func NewStorage(fileName string) *SpellStorage {
 	return &storage
 }
 
-func (s *SpellStorage)AcceptSpellerSuggest(ctx context.Context, convey <- chan Spelling) {
+func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan Spelling) {
 	for {
 		select {
-		case msg := <- convey:
+		case msg := <-convey:
 			log.Println("Storage got a message from speller!")
 			s.CreateOrAdd(msg)
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (s *SpellStorage)CreateOrAdd(spelling Spelling) {
+func (s *SpellStorage) CreateOrAdd(spelling Spelling) {
 	log.Println(spelling)
 	if err := s.CreateSpell(&spelling); err != nil {
+		log.Println("storage:", err)
 		err = s.AddSpell(&spelling)
 		if err != nil {
 			log.Print(err)
@@ -64,7 +60,7 @@ func (s *SpellStorage) CreateSpell(spelling *Spelling) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.Storage[spelling.SpellName]; ok {
-		return errors.New(spelling.SpellName + "is already created")
+		return errors.New(spelling.SpellName + " is already created")
 	}
 	s.Storage[spelling.SpellName] = append(s.Storage[spelling.SpellName], spelling.MisSpells...)
 
@@ -76,7 +72,7 @@ func (s *SpellStorage) ReadSpell(spelling string) (*Spelling, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if _, ok := s.Storage[spelling]; !ok {
-		return nil, fmt.Errorf("`%s` %s", spelling," is not created")
+		return nil, fmt.Errorf("`%s` %s", spelling, " is not created")
 	}
 	return &Spelling{spelling, s.Storage[spelling]}, nil
 }
@@ -91,7 +87,12 @@ func (s *SpellStorage) AddSpell(spelling *Spelling) error {
 	if len(spelling.MisSpells) < 1 {
 		return errors.New(spelling.SpellName + " provide incorrect words")
 	}
-	s.Storage[spelling.SpellName] = append(s.Storage[spelling.SpellName], spelling.MisSpells...)
+	for _, v := range spelling.MisSpells {
+		if !in(v, s.Storage[spelling.SpellName]) {
+			s.Storage[spelling.SpellName] = append(s.Storage[spelling.SpellName], v)
+		}
+	}
+
 	return nil
 }
 
@@ -106,7 +107,7 @@ func (s *SpellStorage) DeleteSpell(spelling string) error {
 	return nil
 }
 
-//DeleteParticularSpellings deletes 
+//DeleteParticularSpellings deletes
 func (s *SpellStorage) DeleteParticularSpellings(spelling *Spelling) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -126,65 +127,3 @@ func (s *SpellStorage) DeleteParticularSpellings(spelling *Spelling) error {
 	}
 	return nil
 }
-
-//CSVReader creates map[firstColumnCSV] and splitted by "|" second column
-func CSVReader(fileName string) (map[string][]string, error) {
-	outputMap := make(map[string][]string)
-	csvFile, err := os.Open(fileName)
-	if err != nil {
-		return nil, err
-	}
-	defer csvFile.Close()
-	reader := csv.NewReader(bufio.NewReader(csvFile))
-	for {
-		line, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
-		if line == nil {
-			continue
-		}
-		splittedLine := strings.Split(line[0], ";")
-		if len(splittedLine) < 2 {
-			continue
-		}
-		key := strings.TrimSuffix(strings.Split(line[0], ";")[0], ";")
-		errWords := strings.Split(strings.Split(line[0], ";")[1], "|")
-		errWords[len(errWords)-1] = strings.TrimSuffix(errWords[len(errWords)-1], ";")
-		outputMap[key] = append(outputMap[key], errWords...)
-	}
-	return outputMap, nil
-}
-
-// func csvReaderRegex(fileName string) map[string][]string { //пытаемся прочитать csv и сделать привычную для нас мапу "правильноеСлово":["неправильные слова"...]
-// 	outputMap := make(map[string][]string)
-// 	csvFile, err := os.Open(fileName)
-// 	patt := `^[а-яА-Я]`
-// 	if err != nil {
-// 		log.Fatal(err)
-// 	}
-// 	reader := csv.NewReader(bufio.NewReader(csvFile))
-// 	for {
-// 		line, err := reader.Read()
-// 		if err == io.EOF {
-// 			break
-// 		}
-// 		if len(line) < 2 {
-// 			continue
-// 		}
-// 		key := strings.TrimSuffix(strings.Split(line[0], ";")[0], ";")
-// 		if ok, _ := regexp.Match(patt, []byte(key)); !ok {
-// 			continue
-// 		}
-// 		errWords := strings.Split(line[1], "|")
-// 		for _, v := range errWords {
-// 			v := strings.TrimSuffix(v, ";")
-// 			if ok, _ := regexp.Match(patt, []byte(v)); ok {
-// 				if len(strings.Fields(key)) == len(strings.Fields(v)) {
-// 					outputMap[key] = append(outputMap[key], v)
-// 				}
-// 			}
-// 		}
-// 	}
-// 	return outputMap
-// }
