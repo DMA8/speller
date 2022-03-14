@@ -16,6 +16,8 @@ import (
 )
 
 func main() {
+	natsToSpeller := make(chan natsClient.BadMessage)
+	spellerToStorage := make(chan storage.Spelling)
 	ctx, cancel := context.WithCancel(context.Background()) 
 	go func() {
 		c := make(chan os.Signal, 1)
@@ -25,8 +27,6 @@ func main() {
 		time.Sleep(time.Second * 5)
 		os.Exit(0)
 	}()
-	natsToSpeller := make(chan natsClient.BadMessage, 0)
-	spellerToStorage := make(chan storage.Spelling, 0)
 	natsClient.Start2(natsToSpeller)
 	myStorage := storage.NewStorage("spellcheck.csv")
 	r := handlerFastHTTP.ConfiguredRouter(myStorage)
