@@ -32,19 +32,20 @@ func NewStorage(fileName string) *SpellStorage {
 	return &storage
 }
 
+//AcceptSpellerSuggest gets message from the speller and creates or adds new spelling in storage
 func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan Spelling) {
 	for {
 		select {
 		case msg := <-convey:
 			log.Println("Storage got a message from speller!")
-			s.CreateOrAdd(msg)
+			s.createOrAdd(msg)
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (s *SpellStorage) CreateOrAdd(spelling Spelling) {
+func (s *SpellStorage) createOrAdd(spelling Spelling) {
 	log.Println(spelling)
 	if err := s.CreateSpell(&spelling); err != nil {
 		log.Println("storage:", err)

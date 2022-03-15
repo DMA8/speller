@@ -36,13 +36,14 @@ func TestNewStorage(t *testing.T) {
 }
 
 func TestCreateSpell(t *testing.T) {
-	var testWord string
+	var testWord Spelling
 	testMap := NewStorage("spells.csv")
 
-	testWord = "арбуз;арбус|орбуз;"
+	testWord.MisSpells = []string{"арбус", "орбуз"}
+	testWord.SpellName = "арбуз"
 	testKey := "арбуз"
 	if _, ok := testMap.Storage[testKey]; !ok {
-		err := testMap.CreateSpell(testWord)
+		err := testMap.CreateSpell(&testWord)
 		if _, ok := testMap.Storage[testKey]; !ok && err != nil{
 			t.Error("new spell wasn't created")
 		}
@@ -50,7 +51,7 @@ func TestCreateSpell(t *testing.T) {
 	if !in("орбуз", testMap.Storage["арбуз"]) && !in("арбус", testMap.Storage["арбуз"]) {
 		t.Error("failed to add spelling")
 	}
-	err := testMap.CreateSpell(testWord)
+	err := testMap.CreateSpell(&testWord)
 	if err == nil {
 		t.Errorf("%s added second time", testKey)
 	}
@@ -58,18 +59,22 @@ func TestCreateSpell(t *testing.T) {
 
 func TestReadSpell(t *testing.T) {
 	testMap := NewStorage("spells.csv")
-	readedWords, err := testMap.ReadSPell("спички")
+	readedWords, err := testMap.ReadSpell("спички")
 	if err != nil {
 		t.Error("спичка not found")
 	}
-	if !in("спичьки", readedWords) || !in("спишки", readedWords) || !in("спитчки", readedWords) {
+	content := readedWords.MisSpells
+	if !in("спичьки", content) || !in("спишки", content) || !in("спитчки", content) {
 		t.Error("reading error!")
 	}
 }
 
 func TestAddSpell(t *testing.T) {
+	var testWord Spelling
+	testWord.SpellName = "спички"
+	testWord.MisSpells = []string{"спеттчки"}
 	testMap := NewStorage("spells.csv")
-	err := testMap.AddSpell("спички;спеттчки")
+	err := testMap.AddSpell(&testWord)
 	if err != nil {
 		t.Error("error while adding to the storage")
 	}
@@ -90,8 +95,11 @@ func TestDeleteSpell(t *testing.T) {
 }
 
 func TestDeleteParticularSpelling(t *testing.T) {
+	var testWord Spelling
 	testMap := NewStorage("spells.csv")
-	err := testMap.DeleteParticularSpellings("спички;спитчки")
+	testWord.SpellName = "спички"
+	testWord.MisSpells = []string{"спитчки"}
+	err := testMap.DeleteParticularSpellings(&testWord)
 	if err != nil {
 		t.Error("Error while deleting particular spelling")
 	}

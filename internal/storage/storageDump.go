@@ -9,32 +9,33 @@ import (
 	"time"
 )
 
-func (s *SpellStorage)Dump(ctx context.Context) {
-	ticker := time.NewTicker(time.Minute * 1)
+// Dump saves storage in spellcheck.csv file each N minutes or when ctrl+c pressed
+func (s *SpellStorage)Dump(ctx context.Context, everyMinutes int) {
+	ticker := time.NewTicker(time.Minute * time.Duration(everyMinutes))
 	for {
 	select{
 	case <-ctx.Done():
-		s.SaveFile()
+		s.saveFile()
+		log.Println("Dump at exit is done")
 		return
 	case <-ticker.C :
-		s.SaveFile()
+		s.saveFile()
+		log.Println("Dump is done")
 	}
 	}
 }
 
-func (s *SpellStorage)SaveFile() {
+func (s *SpellStorage)saveFile() {
 	var line bytes.Buffer
-	err := os.Mkdir("Dump", 0777)
-	if err != nil {
-		log.Println(err)
-	}
+	os.Mkdir("Dump", 0777)
 	file, err := os.Create("Dump/spellcheck.csv")
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	for key, value := range s.Storage{
-		line.Write([]byte(key + ";" + strings.Join(value, "|") + ";\n"))
+		line.Write([]byte(strings.Join([]string{key, ";", strings.Join(value, "|"), ";\n"}, "")))
 	}
 	file.Write(line.Bytes())
+	file.Close()
 }

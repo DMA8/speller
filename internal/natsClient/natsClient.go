@@ -1,6 +1,7 @@
 package natsClient
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -24,15 +25,17 @@ const (
 	SearchEventQueryCapacity = 1024
 )
 
-func Start(channel chan <- BadMessage) {
-	Subscribe(StanConnect(NatsAddress1, Client, ""), channel)
-}
-func Start2(channel chan <- BadMessage) {
-	Subscribe2(StanConnect(NatsAddressTest, Client2, ""), channel)
-}
-
-func Subscribe(connections stan.Conn, channel chan <- BadMessage) {
-	connections.Subscribe(BadSearchEventSubject, func(m *stan.Msg){
+func Start(ctx context.Context, address, client, cluster string, channel chan <- BadMessage) {
+	conn, err := stan.Connect(
+		address,
+		client,
+		stan.Pings(1, 3),
+		stan.NatsURL(""),
+	)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	sub, err := conn.Subscribe(cluster, func(m *stan.Msg){
 		var badMessage BadMessage
 		err := json.Unmarshal(m.Data, &badMessage)
 		if err != nil {
@@ -40,7 +43,37 @@ func Subscribe(connections stan.Conn, channel chan <- BadMessage) {
 			return
 		}
 		channel <- badMessage
-	} )
+	})
+	if err != nil {
+		log.Println(err)
+	}
+	log.Println("Nats is established!")
+	<-ctx.Done()
+	log.Println("Nats is disconnecting!")
+	err = sub.Unsubscribe()
+	if err != nil {
+		log.Println(err)
+	}
+	err = conn.Close()
+	if err != nil {
+		log.Println(err)
+	}
+}
+
+func Subscribe(connections stan.Conn, channel chan <- BadMessage) {
+	sub, err := connections.Subscribe(BadSearchEventSubject, func(m *stan.Msg){
+		var badMessage BadMessage
+		err := json.Unmarshal(m.Data, &badMessage)
+		if err != nil {
+			log.Print(err)
+			return
+		}
+		channel <- badMessage
+	})
+	if err != nil {
+		log.Println(err)
+	}
+	defer sub.Unsubscribe()
 }
 
 func Subscribe2(connections stan.Conn, channel chan <- BadMessage) {
@@ -77,3 +110,5 @@ func StanConnect(cluster, client, url string) stan.Conn {
 	fmt.Printf("Connected to cluster \"%s\" as client \"%s\"...\n", cluster, client)
 	return sc
 }
+
+

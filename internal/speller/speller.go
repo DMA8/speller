@@ -17,21 +17,21 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Println("speller init done")
 }
 
-
-func AcceptMessage(ctx context.Context, conveyIn <-chan natsClient.BadMessage, conveyOut chan <- storage.Spelling ) {
+func AcceptMessage(ctx context.Context, conveyIn <-chan natsClient.BadMessage, conveyOut chan<- storage.Spelling) {
 	var suggest storage.Spelling
 	for {
 		select {
-		case inpQuery := <- conveyIn:
+		case inpQuery := <-conveyIn:
 			log.Println("Speller got a message from stan client!")
 			suggest.MisSpells = []string{inpQuery.Query}
 			suggest.SpellName = s.SpellCorrect(inpQuery.Query)
 			if suggest.MisSpells[0] != suggest.SpellName {
 				conveyOut <- suggest
 			}
-		case <- ctx.Done():
+		case <-ctx.Done():
 			return
 		}
 	}
