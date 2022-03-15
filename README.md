@@ -3,7 +3,7 @@
 Каждые n минут storage сохраняется в Dump/spellcheck.csv
 
 К Storage можно обратиться по http
-	GET .../read?name=word - отдает word и все связанные с ним опечатки
+	GET .../read?name=word - отдает word и все связанные с ним опечатки\n
 	POST .../add добавляет к существующему списку опечток указанные опечатки (в теле запроса должен быть json вида {"spellName":"csvName", "misSpells":["misspell1", "misspell2]})
 	POST ../create создает связку слово-опечатка (в теле запроса должен быть json вида {"spellName":"csvName", "misSpells":["misspell1", "misspell2]})
 	DELETE ../fullDelete?name=csvName полностью удаляет связку слово-опечатки
