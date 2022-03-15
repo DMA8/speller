@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"time"
 
 	"spellCheck/internal/handlerFastHTTP"
 	"spellCheck/internal/natsClient"
@@ -19,10 +18,10 @@ import (
 // 2. Переписать дамп. Протестировать дамп
 // 3. Добавить комментарии. Попробовать swagger
 
-
 func main() {
 	natsToSpeller := make(chan natsClient.BadMessage)
 	spellerToStorage := make(chan storage.Spelling)
+	dumpDone := make(chan struct{})
 	ctx, cancel := context.WithCancel(context.Background())
 
 	go func() {
@@ -30,14 +29,14 @@ func main() {
 		signal.Notify(c, os.Interrupt)
 		<-c      // waiting for Ctrl+C
 		cancel() // send signal for every goRoutine with ctx
-		time.Sleep(time.Second * 5)
+		<-dumpDone
 		os.Exit(0)
 	}()
 
 	myStorage := storage.NewStorage("spellcheck.csv")
 	r := handlerFastHTTP.ConfiguredRouter(myStorage)
 	go natsClient.Start(ctx, "test-cluster", "client1", "foo", natsToSpeller)
-	go myStorage.Dump(ctx, 1)
+	go myStorage.Dump(ctx, dumpDone, 1)
 	go speller.AcceptMessage(ctx, natsToSpeller, spellerToStorage)
 	go myStorage.AcceptSpellerSuggest(ctx, spellerToStorage)
 	log.Fatal(fasthttp.ListenAndServe(":8080", r.Handler))

@@ -10,13 +10,14 @@ import (
 )
 
 // Dump saves storage in spellcheck.csv file each N minutes or when ctrl+c pressed
-func (s *SpellStorage)Dump(ctx context.Context, everyMinutes int) {
+func (s *SpellStorage)Dump(ctx context.Context, done chan <- struct{}, everyMinutes int) {
 	ticker := time.NewTicker(time.Minute * time.Duration(everyMinutes))
 	for {
 	select{
 	case <-ctx.Done():
 		s.saveFile()
 		log.Println("Dump at exit is done")
+		done <- struct{}{}
 		return
 	case <-ticker.C :
 		s.saveFile()
