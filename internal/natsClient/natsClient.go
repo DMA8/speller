@@ -1,12 +1,14 @@
-package natsClient
+package natsStreamingClient
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-
-	stan "github.com/nats-io/stan.go"
+	protoType "spellCheck/natsSendTest/proto"
+	"github.com/golang/protobuf/proto"
+	//"google.golang.org/protobuf/types/known/timestamppb"
+	"github.com/nats-io/nats.go"
 )
 
 type BadMessage struct {
@@ -25,23 +27,20 @@ const (
 	SearchEventQueryCapacity = 1024
 )
 
-func Start(ctx context.Context, address, client, cluster string, channel chan <- BadMessage) {
-	conn, err := stan.Connect(
-		address,
-		client,
-		stan.Pings(1, 3),
-		stan.NatsURL(""),
-	)
+func Start(ctx context.Context, address, topic string, channel chan <- BadMessage) {
+	conn, err := nats.Connect( address)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	sub, err := conn.Subscribe(cluster, func(m *stan.Msg){
+	sub, err := conn.Subscribe(topic, func(m *nats.Msg){
+		var badMessageProto protoType.BadSearchEvent
 		var badMessage BadMessage
-		err := json.Unmarshal(m.Data, &badMessage)
+		err := proto.Unmarshal(m.Data, &badMessageProto)
 		if err != nil {
 			log.Print(err)
 			return
 		}
+		badMessage.Query= badMessageProto.Query
 		channel <- badMessage
 	})
 	if err != nil {
@@ -54,14 +53,11 @@ func Start(ctx context.Context, address, client, cluster string, channel chan <-
 	if err != nil {
 		log.Println(err)
 	}
-	err = conn.Close()
-	if err != nil {
-		log.Println(err)
-	}
+	conn.Close()
 }
 
-func Subscribe(connections stan.Conn, channel chan <- BadMessage) {
-	sub, err := connections.Subscribe(BadSearchEventSubject, func(m *stan.Msg){
+func Subscribe(connections nats.Conn, channel chan <- BadMessage) {
+	sub, err := connections.Subscribe(BadSearchEventSubject, func(m *nats.Msg){
 		var badMessage BadMessage
 		err := json.Unmarshal(m.Data, &badMessage)
 		if err != nil {
@@ -76,8 +72,8 @@ func Subscribe(connections stan.Conn, channel chan <- BadMessage) {
 	defer sub.Unsubscribe()
 }
 
-func Subscribe2(connections stan.Conn, channel chan <- BadMessage) {
-	connections.Subscribe(TestSubj, func(m *stan.Msg){
+func Subscribe2(connections nats.Conn, channel chan <- BadMessage) {
+	connections.Subscribe(TestSubj, func(m *nats.Msg){
 		log.Println("nats handler caught a message!")
 		var badMessage BadMessage
 		err := json.Unmarshal(m.Data, &badMessage)
@@ -90,19 +86,16 @@ func Subscribe2(connections stan.Conn, channel chan <- BadMessage) {
 }
 
 //В каком виде приходит сообщение? какую структуру создавать?
-func BadSearchEventHandler(message *stan.Msg) {
+func BadSearchEventHandler(message *nats.Msg) {
 }
 
 //Зачем нам этот сабджект?
-func SearchEvent(message *stan.Msg) {
+func SearchEvent(message *nats.Msg) {
 }
  
-func StanConnect(cluster, client, url string) stan.Conn {
-	sc, err := stan.Connect(
+func StanConnect(cluster, client, url string) *nats.Conn {
+	sc, err := nats.Connect(
 		cluster,
-		client,
-		stan.Pings(1, 3),
-		stan.NatsURL(""),
 	)
 	if err != nil {
 		log.Fatalln(err)

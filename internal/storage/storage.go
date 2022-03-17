@@ -13,7 +13,7 @@ type SpellStorage struct {
 	Storage map[string][]string
 	mu      sync.Mutex
 }
-
+var a int
 //Spelling: SpellName - correct word; MisSpells - incorrect variants of SpellName
 type Spelling struct {
 	SpellName string   `json:"spellName"`
@@ -37,7 +37,8 @@ func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan S
 	for {
 		select {
 		case msg := <-convey:
-			log.Println("Storage got a message from speller!")
+			log.Println("Storage got a message from speller!", a)
+			a++
 			s.createOrAdd(msg)
 		case <-ctx.Done():
 			return
