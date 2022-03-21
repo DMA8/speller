@@ -3,54 +3,49 @@ package main
 import (
 	"context"
 	"log"
+	"runtime/pprof"
 	"os"
 	"os/signal"
 
 	"spellCheck/internal/handlerFastHTTP"
-	//natsStream "spellCheck/internal/natsStreamingClient"
-	nats "spellCheck/internal/natsClient"
+	natsCl "spellCheck/internal/natsClient"
 	"spellCheck/internal/speller"
 	"spellCheck/internal/storage"
 
 	"github.com/valyala/fasthttp"
 )
 
-// TODO:
-// 2. Переписать дамп. Протестировать дамп
-// 3. Добавить комментарии. Попробовать swagger
+//2.6 Gb model is up -> 4,5 Gb after stresstest
 
 func main() {
-	// natsToSpeller := make(chan natsStream.BadMessage)
-	natsToSpeller := make(chan nats.BadMessage)
-	
+	natsToSpeller := make(chan natsCl.BadMessage)
 	spellerToStorage := make(chan storage.Spelling)
 	dumpDone := make(chan struct{})
 	ctx, cancel := context.WithCancel(context.Background())
+	
+	//Profiling
+	p1, _ := os.Create("heap_before.pprof")
+	pprof.Lookup("heap").WriteTo(p1, 0)
+	p1.Close()
+	p2, _ := os.Create("heap_after.pprof")
 
+	//Graceful shutdown
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
-		<-c      // waiting for Ctrl+C
-		cancel() // send signal for every goRoutine with ctx
+		<-c
+		pprof.Lookup("heap").WriteTo(p2, 0)
+		cancel()
+		p2.Close()
 		<-dumpDone
 		os.Exit(0)
 	}()
-
-	//go natsStream.Start(ctx, "ngx-api-r01-03.dp.wb.ru:4242,ngx-api-r03-03.dl.wb.ru:4242,ngx-api-r04-03.dl.wb.ru:4242,ngx-api-r04-03.dp.wb.ru:4242,ngx-api-r05-03.dp.wb.ru:4242", "client-123", "wbxsearch.ru.exactmatch.common.searchevent", natsToSpeller)
-	go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
-	go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
-	go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
-	// go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
-	// go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
-	// go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
-	// go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
-	// go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
-	// go nats.Start(ctx, "localhost:4222", nats.BadSearchEventSubject, natsToSpeller)
 	
+	//go natsCl.Start(ctx, natsCl.NatsAddress1, natsCl.BadSearchEventSubject, natsToSpeller)
+	go natsCl.Start(ctx, "localhost:4222", natsCl.BadSearchEventSubject, natsToSpeller)	
 	myStorage := storage.NewStorage("spellcheck.csv")
 	r := handlerFastHTTP.ConfiguredRouter(myStorage)
-	// go natsClient.Start(ctx, "test-cluster", "client1", "foo", natsToSpeller)
-	go myStorage.Dump(ctx, dumpDone, 1)
+	go myStorage.Dump(ctx, dumpDone, 1) // last arg is a dump cycle
 	go speller.AcceptMessage(ctx, natsToSpeller, spellerToStorage)
 	go myStorage.AcceptSpellerSuggest(ctx, spellerToStorage)
 	log.Fatal(fasthttp.ListenAndServe(":8080", r.Handler))

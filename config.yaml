@@ -7,3 +7,5 @@ speller_config:
   bigram_weight: 50
   trigram_weight: 80
   auto_train_mode: false
+nats_config:
+  

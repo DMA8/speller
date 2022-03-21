@@ -3,18 +3,16 @@ package speller
 import (
 	"context"
 	"log"
-//	natsStreaming "spellCheck/internal/natsStreamingClient"
+
 	nats "spellCheck/internal/natsClient"
-
 	"spellCheck/internal/storage"
-
 	"github.com/Saimunyz/speller"
 )
 
 var s *speller.Speller
 
 func init() {
-	s = speller.NewSpeller()
+	s = speller.NewSpeller("config.yaml")
 	err := s.LoadModel("./models/bin-not-normalized-data.gz")
 	if err != nil {
 		log.Fatal(err)
@@ -24,6 +22,7 @@ func init() {
 
 func AcceptMessage(ctx context.Context, conveyIn <-chan nats.BadMessage, conveyOut chan<- storage.Spelling) {
 	var suggest storage.Spelling
+	
 	for {
 		select {
 		case inpQuery := <-conveyIn:
