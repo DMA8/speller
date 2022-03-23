@@ -1,0 +1,25 @@
+speller_config:
+  sentences_path: datasets/ru/small-sentences.txt.gz
+  dict_path: datasets/ru/freq-dict.txt.gz
+  min_word_freq: 5
+  min_word_length: 3
+  unigram_weight: 100
+  bigram_weight: 50
+  trigram_weight: 80
+  auto_train_mode: false
+
+nats_config:
+  natsAddress: "wbx-search-nats.dp.wb.ru:4222,wbx-search-nats-2.dp.wb.ru:4222,wbx-search-nats.dl.wb.ru:4222,wbx-search-nats-2.dl.wb.ru:4222"
+  natsAddress2: ngx-api-r01-03.dp.wb.ru:4242,ngx-api-r02-03.dl.wb.ru:4242,ngx-api-r03-03.dl.wb.ru:4242,ngx-api-r04-03.dl.wb.ru:4242,ngx-api-r05-03.dp.wb.ru:4242
+  natsAddressTest: "test-cluster"
+  badSearchEventSubject: "wbxsearch.ru.exactmatch.common.badsearchevent"
+  badSearchEventQueryCapacity : 1024
+  searchEventSubject: "wbxsearch.ru.exactmatch.common.searchevent"
+  searchEventQueryCapacity: 1024
+
+s3_config:
+  сronForSave: "*/1 * * * *"
+  s3Endpoint: "https://s3-corp-ha.wildberriessss.ru/"
+  s3Region: "us-east-1"
+  s3Bucket: "spellcheck"
+  filePath: "./Dump/spellcheck.csv"

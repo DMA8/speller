@@ -16,8 +16,8 @@ type SpellStorage struct {
 var a int
 //Spelling: SpellName - correct word; MisSpells - incorrect variants of SpellName
 type Spelling struct {
-	SpellName string   `json:"spellName"`
-	MisSpells []string `json:"misSpells"`
+	SpellName string   `json:"spellName"` //то, как исправил спеллер
+	MisSpells []string `json:"misSpells"` //запрос, который надо было исправить
 }
 
 //NewStorage creates new storage
@@ -37,7 +37,7 @@ func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan S
 	for {
 		select {
 		case msg := <-convey:
-			log.Println("Storage got a message from speller!", a)
+			//log.Println("Storage got a message from speller!", a)
 			a++
 			s.createOrAdd(msg)
 		case <-ctx.Done():
@@ -47,9 +47,12 @@ func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan S
 }
 
 func (s *SpellStorage) createOrAdd(spelling Spelling) {
-	log.Println(spelling)
+	// fmt.Println("Error: ",spelling.MisSpells[0])
+	// fmt.Println("SpellerResult: ", spelling.SpellName)
+	// fmt.Println()
+
 	if err := s.CreateSpell(&spelling); err != nil {
-		log.Println("storage:", err)
+		//log.Println("storage:", err)
 		err = s.AddSpell(&spelling)
 		if err != nil {
 			log.Print(err)
