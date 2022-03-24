@@ -37,7 +37,7 @@ func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan S
 	for {
 		select {
 		case msg := <-convey:
-			//log.Println("Storage got a message from speller!", a)
+			//fmt.Printf("spellerSuggest: %s\nError: %s\n\n", msg.SpellName, msg.MisSpells[0])
 			a++
 			s.createOrAdd(msg)
 		case <-ctx.Done():
@@ -47,12 +47,7 @@ func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan S
 }
 
 func (s *SpellStorage) createOrAdd(spelling Spelling) {
-	// fmt.Println("Error: ",spelling.MisSpells[0])
-	// fmt.Println("SpellerResult: ", spelling.SpellName)
-	// fmt.Println()
-
 	if err := s.CreateSpell(&spelling); err != nil {
-		//log.Println("storage:", err)
 		err = s.AddSpell(&spelling)
 		if err != nil {
 			log.Print(err)

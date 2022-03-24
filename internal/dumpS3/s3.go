@@ -55,7 +55,7 @@ func Dump() {
 	s3Token := os.Getenv("s3Token")
 	s3Secret := os.Getenv("s3Secret")
 	if s3Token == "" || s3Secret == "" {
-		log.Fatal("provide token and secret for s3")
+		log.Fatal("provide token and secret for s3; export s3Token=1231231 export s3Secret=asdasdasd")
 	}
 	cron := cron.New()
 	_, err = cron.AddFunc(s3Conf.CFG.CronForSave, func() {
@@ -79,7 +79,6 @@ func Dump() {
 }
 
 func UploadToS3(endpoint, token, secret, region, bucket, filename string) error {
-	fmt.Println("here!!!!!!!!!!!!!")
 	awsSession, err := session.NewSession(
 		aws.NewConfig().
 			WithCredentials(
@@ -95,21 +94,17 @@ func UploadToS3(endpoint, token, secret, region, bucket, filename string) error 
 	if err != nil {
 		return fmt.Errorf("uploadToS3 %s", err.Error())
 	}
-
 	s3Client := s3.New(awsSession, aws.NewConfig().WithEndpoint(endpoint))
-
 	file, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-
 	_, err = s3Client.PutObject(&s3.PutObjectInput{
 		Body:   file,
 		Bucket: &bucket,
 		Key:    &filename,
 	})
-
 	if err != nil {
 		return fmt.Errorf("uploadToS3 %s", err.Error())
 	}

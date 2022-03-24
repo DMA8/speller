@@ -2,14 +2,16 @@ package natsStreamingClient
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	protoType "spellCheck/internal/proto"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"gopkg.in/yaml.v2"
 	"github.com/nats-io/nats.go"
+	"gopkg.in/yaml.v2"
 )
 
 type BadMessage struct {
@@ -19,7 +21,7 @@ type BadMessage struct {
 
 type natsConfig struct {
 	NatsAddress                 string `yaml:"natsAddress"`
-	BadSearchEventSubject       string `yaml:"badSearchEventSubject"`
+	BadSearchEventSubject       string `yaml:"badSearchEventSubjectCommon"`
 	SearchEventSubject          string `yaml:"searchEventSubject"`
 	BadSearchEventQueryCapacity int    `yaml:"badSearchEventQueryCapacity"`
 	SearchEventQueryCapacity    int    `yaml:"searchEventQueryCapacity"`
@@ -62,7 +64,7 @@ func Start(ctx context.Context, channel chan<- BadMessage, done chan struct{}) {
 		log.Fatalln(err)
 	}
 	log.Printf("nats CONNECTED: %s", cfg.NatsConfig.NatsAddress)
-	sub, err := conn.Subscribe(cfg.NatsConfig.SearchEventSubject, func(m *nats.Msg) {
+	sub, err := conn.Subscribe(cfg.NatsConfig.BadSearchEventSubject, func(m *nats.Msg) {
 		var badMessageProto protoType.BadSearchEvent
 		var badMessage BadMessage
 		err := proto.Unmarshal(m.Data, &badMessageProto)
@@ -70,8 +72,16 @@ func Start(ctx context.Context, channel chan<- BadMessage, done chan struct{}) {
 			log.Print(err)
 			return
 		}
+		
 		badMessage.Query = badMessageProto.Query
 		badMessage.Error = badMessageProto.Error
+		if !strings.HasPrefix(badMessageProto.Error, "only") {
+			fmt.Println("query: ", badMessageProto.Query)
+			fmt.Println("error: ", badMessageProto.Error)
+			fmt.Println("--------------------------------------------")
+		} 
+
+
 		channel <- badMessage
 	})
 	if err != nil {

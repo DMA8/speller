@@ -33,6 +33,9 @@ func AcceptMessage(ctx context.Context, conveyIn <-chan nats.BadMessage, conveyO
 			//log.Println("Speller got a message from stan client!")
 			// suggest.MisSpells = []string{inpQuery.Query}
 			suggest.MisSpells = []string{inpQuery.Query}
+			if inpQuery.Query == "" {
+				continue
+			}
 			suggest.SpellName = s.SpellCorrect(inpQuery.Query)
 			if suggest.MisSpells[0] != suggest.SpellName {
 				conveyOut <- suggest
