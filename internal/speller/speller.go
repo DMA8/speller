@@ -30,8 +30,6 @@ func AcceptMessage(ctx context.Context, conveyIn <-chan nats.BadMessage, conveyO
 			if inpQuery.Query == "" {
 				continue
 			}
-			//log.Println("Speller got a message from stan client!")
-			// suggest.MisSpells = []string{inpQuery.Query}
 			suggest.MisSpells = []string{inpQuery.Query}
 			if inpQuery.Query == "" {
 				continue

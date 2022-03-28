@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 )
@@ -28,7 +29,14 @@ func (s *SpellStorage)Dump(ctx context.Context, done chan <- struct{}, everyMinu
 	}
 }
 
+//Should be ordered!!!!
 func (s *SpellStorage)saveFile() {
+	//Should be ordered!!!!
+	sortedKeys := make([]string, 0, len(s.Storage))
+	for key := range s.Storage {
+		sortedKeys = append(sortedKeys, key)
+	}
+	sort.Strings(sortedKeys)
 	os.Mkdir("Dump", 0777)
 	file, err := os.Create("Dump/spellcheck.csv")
 	if err != nil {
@@ -37,8 +45,8 @@ func (s *SpellStorage)saveFile() {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for key, value := range s.Storage{
-		file.WriteString(strings.Join([]string{key, ";", strings.Join(value, "|"), ";\n"}, ""))
+	for _, key := range sortedKeys{
+		file.WriteString(strings.Join([]string{key, ";", strings.Join(s.Storage[key], "|"), ";\n"}, ""))
 		//line.Write([]byte(strings.Join([]string{key, ";", strings.Join(value, "|"), ";\n"}, "")))
 	}
 	file.Close()

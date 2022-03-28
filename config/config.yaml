@@ -13,10 +13,12 @@ nats_config:
   natsAddress2: ngx-api-r01-03.dp.wb.ru:4242,ngx-api-r02-03.dl.wb.ru:4242,ngx-api-r03-03.dl.wb.ru:4242,ngx-api-r04-03.dl.wb.ru:4242,ngx-api-r05-03.dp.wb.ru:4242
   natsAddressTest: "test-cluster"
   badSearchEventSubjectCommon: "wbxsearch.ru.exactmatch.common.badsearchevent"
-  badSearchEventSubjectMale: "wbxsearch.ru.exactmatch.common.badsearchevent"
-  badSearchEventSubjectFemale: "wbxsearch.ru.exactmatch.common.badsearchevent"
+  badSearchEventSubjectMale: "wbxsearch.ru.exactmatch.male.badsearchevent"
+  badSearchEventSubjectFemale: "wbxsearch.ru.exactmatch.female.badsearchevent"
   badSearchEventQueryCapacity : 1024
-  searchEventSubject: "wbxsearch.ru.exactmatch.common.searchevent"
+  searchEventSubjectCommon: "wbxsearch.ru.exactmatch.common.searchevent"
+  searchEventSubjectMale: "wbxsearch.ru.exactmatch.male.searchevent"
+  searchEventSubjectFemale: "wbxsearch.ru.exactmatch.female.searchevent"
   searchEventQueryCapacity: 1024
 
 s3_config:

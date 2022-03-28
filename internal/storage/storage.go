@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 )
 
@@ -47,10 +48,24 @@ func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan S
 }
 
 func (s *SpellStorage) createOrAdd(spelling Spelling) {
-	if err := s.CreateSpell(&spelling); err != nil {
-		err = s.AddSpell(&spelling)
-		if err != nil {
-			log.Print(err)
+	spellerSuggestSplitted := strings.Split(spelling.SpellName, " ")
+	rawCustomerQuerySplitted := strings.Split(spelling.MisSpells[0], " ")
+	if len(spellerSuggestSplitted) != len(rawCustomerQuerySplitted) {
+		return
+	}
+	for i := range spellerSuggestSplitted {
+		if spellerSuggestSplitted[i] == rawCustomerQuerySplitted[i] {
+			continue
+		}
+		addObject := Spelling{
+			SpellName: spellerSuggestSplitted[i],
+			MisSpells: []string{rawCustomerQuerySplitted[i]},
+		}
+		if err := s.CreateSpell(&addObject); err != nil {
+			err = s.AddSpell(&addObject)
+			if err != nil {
+				log.Print(err)
+			}
 		}
 	}
 }
