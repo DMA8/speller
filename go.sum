@@ -1,7 +1,7 @@
 github.com/DataDog/datadog-go v2.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
-github.com/Saimunyz/speller v0.0.0-20220321182414-5e532fbe8227 h1:IcOQZHheQtBgfwMIGDxpK8NTg01KBAbXLQVaEgYXVSw=
-github.com/Saimunyz/speller v0.0.0-20220321182414-5e532fbe8227/go.mod h1:9jDnzaYt7TuiIYwwgK4+mHUdn8tR9LqcgbRunCLYwCA=
+github.com/Saimunyz/speller v0.0.0-20220512134909-e7a675e32000 h1:nAYnoqB/QBPP5G44zGYyJzOXfVUtH4+LKqLRB7ha75A=
+github.com/Saimunyz/speller v0.0.0-20220512134909-e7a675e32000/go.mod h1:MizqnXZPaOew54Nkdd72hMiuJPICsjOibVp9XcMEWts=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
@@ -23,8 +23,6 @@ github.com/creack/pty v1.1.9/go.mod h1:oKZEueFk5CKHvIhNR5MUki03XCEU+Q6VDXinZuGJ3
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/eskriett/spell v0.0.0-20210919200434-03313e3b725f h1:mPynKhbnZ23WhRhoPILHnoWPmBggreHEjd8EQZ66ddM=
-github.com/eskriett/spell v0.0.0-20210919200434-03313e3b725f/go.mod h1:7rKRnfuXt5i1vs60OAWNrgaT3t1Xr2Brh1mX7s9LQow=
 github.com/eskriett/strmet v0.0.0-20200126103939-2653f802bdb0 h1:GIeVmCzx6nh+ME5+NHwRoe88hX1uts2oa0KoaJdPxp8=
 github.com/eskriett/strmet v0.0.0-20200126103939-2653f802bdb0/go.mod h1:EifF5zlC1liBkHe4YKuoxeXJVUs+CRQgOEL+3QIREUg=
 github.com/fasthttp/router v1.4.6 h1:KfETdHGBnvoBfBHeRe/8TVYz8Bp/mASBVC5UXO9CpZI=
@@ -177,10 +175,9 @@ github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
-github.com/tidwall/gjson v1.9.1/go.mod h1:jydLKE7s8J0+1/5jC4eXcuFlzKizGrCKvLmBVX/5oXc=
+github.com/tidwall/gjson v1.9.3/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
 github.com/tidwall/gjson v1.14.0 h1:6aeJ0bzojgWLa82gDQHcx3S0Lr/O51I9bJ5nv6JFx5w=
 github.com/tidwall/gjson v1.14.0/go.mod h1:/wbyibRr2FHMks5tjHJ5F8dMZh3AcwJEMf5vlfC0lxk=
-github.com/tidwall/match v1.0.3/go.mod h1:eRSPERbgtNPcGhD8UCthc6PmLEQXEWd3PRB5JTxsfmM=
 github.com/tidwall/match v1.1.1 h1:+Ho715JplO36QYgwN9PGYNhgZvoUSc9X2c80KVTi+GA=
 github.com/tidwall/match v1.1.1/go.mod h1:eRSPERbgtNPcGhD8UCthc6PmLEQXEWd3PRB5JTxsfmM=
 github.com/tidwall/pretty v1.2.0 h1:RWIZEg2iJ8/g6fDDYzMpobmaoGh5OLl4AXtGUGPcqCs=

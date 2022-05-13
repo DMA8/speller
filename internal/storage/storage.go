@@ -11,8 +11,11 @@ import (
 
 //SpellStorage
 type SpellStorage struct {
-	Storage map[string][]string
-	mu      sync.Mutex
+	Storage					map[string][]string
+	StorageOnlyNewKeysAdded	map[string][]string
+	BlackList				map[string]struct{}
+	NewAddedErrors			map[string]struct{}
+	mu						sync.Mutex
 }
 var a int
 //Spelling: SpellName - correct word; MisSpells - incorrect variants of SpellName
@@ -24,11 +27,19 @@ type Spelling struct {
 //NewStorage creates new storage
 func NewStorage(fileName string) *SpellStorage {
 	var storage SpellStorage
-	var err error
+	var err, err2 error
 	storage.Storage, err = CSVReader(fileName)
+	storage.StorageOnlyNewKeysAdded, err2 = CSVReader(fileName)
+	storage.BlackList = make(map[string]struct{})
+	storage.NewAddedErrors = make(map[string]struct{})
+	for key := range storage.Storage {
+		storage.BlackList[key] = struct{}{}
+	}
 	storage.mu = sync.Mutex{}
-	if err != nil {
+	if err != nil{
 		log.Fatal(err)
+	} else if err2 != nil {
+		log.Fatal(err2)
 	}
 	return &storage
 }
@@ -48,8 +59,11 @@ func (s *SpellStorage) AcceptSpellerSuggest(ctx context.Context, convey <-chan S
 }
 
 func (s *SpellStorage) createOrAdd(spelling Spelling) {
-	spellerSuggestSplitted := strings.Split(spelling.SpellName, " ")
-	rawCustomerQuerySplitted := strings.Split(spelling.MisSpells[0], " ")
+	spellerSuggestSplitted := strings.Fields(spelling.SpellName)
+	rawCustomerQuerySplitted := strings.Fields(spelling.MisSpells[0])
+	for i := range rawCustomerQuerySplitted {
+		rawCustomerQuerySplitted[i] = strings.Trim(rawCustomerQuerySplitted[i], ".,-/!%#$^:&?*()")
+	}
 	if len(spellerSuggestSplitted) != len(rawCustomerQuerySplitted) {
 		return
 	}
@@ -67,6 +81,12 @@ func (s *SpellStorage) createOrAdd(spelling Spelling) {
 				log.Print(err)
 			}
 		}
+		if err := s.CreateSpellBlackList(&addObject); err != nil {
+			err = s.AddSpellBlackList(&addObject)
+			if err == nil {
+				s.NewAddedErrors[addObject.MisSpells[0]] = struct{}{}
+			}
+		}
 	}
 }
 
@@ -78,6 +98,18 @@ func (s *SpellStorage) CreateSpell(spelling *Spelling) error {
 		return errors.New(spelling.SpellName + " is already created")
 	}
 	s.Storage[spelling.SpellName] = append(s.Storage[spelling.SpellName], spelling.MisSpells...)
+
+	return nil
+}
+
+//CreateSpell creates pair spellWord - misSpells in storage's map
+func (s *SpellStorage) CreateSpellBlackList(spelling *Spelling) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.Storage[spelling.SpellName]; ok {
+		return errors.New(spelling.SpellName + " is already created")
+	}
+	s.StorageOnlyNewKeysAdded[spelling.SpellName] = append(s.StorageOnlyNewKeysAdded[spelling.SpellName], spelling.MisSpells...)
 
 	return nil
 }
@@ -107,7 +139,27 @@ func (s *SpellStorage) AddSpell(spelling *Spelling) error {
 			s.Storage[spelling.SpellName] = append(s.Storage[spelling.SpellName], v)
 		}
 	}
+	return nil
+}
 
+//AddSpell adds given pair spellName - misSpells
+func (s *SpellStorage) AddSpellBlackList(spelling *Spelling) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.Storage[spelling.SpellName]; !ok {
+		return errors.New(spelling.SpellName + " is not added")
+	}
+	if _, ok := s.BlackList[spelling.SpellName]; ok {
+		return errors.New(spelling.SpellName + " is in the black list")
+	}
+	if len(spelling.MisSpells) < 1 {
+		return errors.New(spelling.SpellName + " provide incorrect words")
+	}
+	for _, v := range spelling.MisSpells {
+		if !in(v, s.Storage[spelling.SpellName]) {
+			s.StorageOnlyNewKeysAdded[spelling.SpellName] = append(s.StorageOnlyNewKeysAdded[spelling.SpellName],  v)
+		}
+	}
 	return nil
 }
 

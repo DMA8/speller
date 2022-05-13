@@ -2,14 +2,14 @@ package natsStreamingClient
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	protoType "spellCheck/internal/proto"
 	"strings"
-	"unicode"
+
+	//"unicode"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/nats-io/nats.go"
@@ -59,7 +59,9 @@ func ReadConfigYML(filePath string) (cfg *config, err error) {
 }
 
 func Start(ctx context.Context, channel chan<- BadMessage, done chan struct{}) {
-	regEx := regexp.MustCompile(`^[а-яА-Яa-zA-Z]*[\.\,-]?$`)
+	// regEx := regexp.MustCompile(`^[а-яА-Яa-zA-Z]*[\.\,-]?$`)
+	regEx := regexp.MustCompile(`.*`)
+
 	cfg, err := ReadConfigYML("config/config.yaml")
 	if err != nil {
 		panic(err)
@@ -83,13 +85,15 @@ func Start(ctx context.Context, channel chan<- BadMessage, done chan struct{}) {
 				log.Print(err)
 				return
 			}
-			
-			if badMessageProto.ShardKey == ""{ //|| badMessageProto.ShardKey == "merger"
-			filterdMsg, ok := filterMsg(badMessageProto.Query, regEx)
+
+			if badMessageProto.ShardKey == "" { //|| badMessageProto.ShardKey == "merger"
+				filterdMsg, ok := filterMsg(badMessageProto.Query, regEx)
 				if ok {
-					fmt.Println(filterdMsg)
+					//fmt.Println(filterdMsg)
 					badMessage.Query = filterdMsg
 					channel <- badMessage
+				} else {
+					log.Println("regex filterd")
 				}
 			}
 		})
@@ -113,18 +117,16 @@ func Start(ctx context.Context, channel chan<- BadMessage, done chan struct{}) {
 	done <- struct{}{}
 }
 
-
 //если в запросе много грязи, то мы не пропускаем его. Его в запросе несколько плохих слов, мы вернем запрос без плохих слов
-func filterMsg(msg string, regEng *regexp.Regexp) (string, bool){
+func filterMsg(msg string, regEng *regexp.Regexp) (string, bool) {
 	allWords := strings.Split(msg, " ")
 	outWords := make([]string, 0, len(allWords))
 	for _, word := range allWords {
-		if regEng.Match([]byte(word)){
+		if regEng.Match([]byte(word)) {
 			outWords = append(outWords, word)
 		}
 	}
-	if len(outWords) * 2 >= len(allWords) {
-		fmt.Println(msg, "->", strings.Join(outWords, " "))
+	if len(outWords)*2 > len(allWords) {
 		return strings.Join(outWords, " "), true
 	}
 	return "", false

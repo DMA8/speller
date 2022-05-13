@@ -3,7 +3,8 @@ module spellCheck
 go 1.17
 
 require (
-	github.com/Saimunyz/speller v0.0.0-20220321182414-5e532fbe8227
+	// github.com/Saimunyz/speller v0.0.0-20220418094947-6172cbe195df
+	github.com/Saimunyz/speller v0.0.0-20220512134909-e7a675e32000
 	github.com/aws/aws-sdk-go v1.43.23
 	github.com/fasthttp/router v1.4.6
 	github.com/golang/protobuf v1.5.2
@@ -18,8 +19,6 @@ require (
 require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/armon/go-metrics v0.3.10 // indirect
-	github.com/eskriett/spell v0.0.0-20210919200434-03313e3b725f // indirect
-	github.com/eskriett/strmet v0.0.0-20200126103939-2653f802bdb0 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/hashicorp/go-hclog v1.2.0 // indirect
